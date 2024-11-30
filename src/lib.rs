@@ -1,4 +1,4 @@
-mod protocol;
+pub mod protocol;
 
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
