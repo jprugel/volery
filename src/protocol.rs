@@ -2,10 +2,18 @@ use serde::{Serialize, Deserialize};
 use bon::Builder;
 use smol::net::TcpStream;
 use smol::io::AsyncWriteExt;
+use bincode::ErrorKind;
 
 pub trait Message:
     Default + Send + Sync + Clone + Serialize + for<'de> Deserialize<'de> + 'static + std::fmt::Debug + PartialEq
 {
+    fn to_bytes(&self) -> Result<Vec<u8>, Box<ErrorKind>> {
+        bincode::serialize(self)
+    }
+
+    fn from_bytes(bytes: &[u8]) -> Result<Self, Box<ErrorKind>> {
+        bincode::deserialize::<Self>(bytes)
+    }
 }
 
 pub const V0: u8 = 0;

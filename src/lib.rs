@@ -1,4 +1,5 @@
 pub mod protocol;
+pub mod prelude;
 
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
@@ -87,15 +88,20 @@ fn network_system<T: Message, U: Message>(
 
             println!("{:?}", header);
                 
-            let serialized = bincode::serialize(&value).unwrap();
-            let _ = send_packet(&mut stream, header, &serialized).await;
+            let serialized = value.to_bytes().unwrap();
+            let _ = send_packet(&mut stream, header, &serialized[..]).await;
 
             let mut buffer = [0 as u8; 1024];
             let header_length = stream.read(&mut buffer[..HEADER_LENGTH as usize]).await.expect("Failed to read to end of buffer");
             dbg!(header_length);
-            info!("Stream: {:?}", buffer);
-            let header = Header::from_bytes(&buffer[..header_length]);           
+            let header = Header::from_bytes(&buffer[..header_length]).unwrap();           
             info!("Deserialized: {:?}", header);
+            let _body_length = stream.read(&mut buffer[header_length..]).await.expect("failed to read to end of buffer");
+            dbg!(header_length,header.length);
+            dbg!(&buffer);
+            let body = U::from_bytes(&buffer[header_length..header_length + _body_length]).expect("Failing to serialize");
+            info!("Deserialized Body: {:?}", body);
+            network.responses.insert(*key, body);
         }
     });
 
